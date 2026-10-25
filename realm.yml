@@ -1,0 +1,35 @@
+name: realm-lds-scriptures
+description: |
+  The Doctrine and Covenants and the Pearl of Great Price as a graph you can query — the two books
+  of Latter-day Saint scripture beside the Book of Mormon. Every verse of the 138 sections, and of
+  Moses, Abraham, Joseph Smith—Matthew, Joseph Smith—History and the Articles of Faith. Read a verse
+  or a section, search either, and find where they draw on the Bible: Moses retells Genesis 1–6,
+  Joseph Smith—Matthew retells Matthew 24, and the sections quote and echo the New Testament
+  throughout.
+
+  With realm-bible installed, each verse that quotes or echoes the King James is joined to it by
+  CORRESPONDS_TO, so a chapter reads beside its source and the differences show.
+
+  A child of the scripture vocabulary: two holy books, each its own scripture, so a question asked
+  of every scripture answers for each. Keyless. Nothing to configure. Text public domain, from
+  bcbooks/scriptures-json; no copyrighted introductions, headings, footnotes or Official Declarations.
+version: 0.1.0
+# Experimental: its types are children of realm-scripture-vocabulary, which is itself experimental.
+maturity: experimental
+url: https://github.com/embabel-worlds/realm-lds-scriptures
+author: Rod Johnson
+realmLabel: LdsScriptures
+tags:
+  - doctrine-and-covenants
+  - pearl-of-great-price
+  - scripture
+  - latter-day-saint
+  - reference
+exports:
+  - DcScripture
+  - DcSection
+  - DcVerse
+  - PgpScripture
+  - PgpBook
+  - PgpChapter
+  - PgpVerse

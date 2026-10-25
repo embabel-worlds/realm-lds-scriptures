@@ -1,0 +1,149 @@
+# The realm's answer surface.
+#
+# References are as a reader writes them — `D&C 76:22`, `Moses 1:39` — matched against `name`. A
+# reader who writes `Doctrine and Covenants 76:22`, or `Joseph Smith-Matthew` with a hyphen where the
+# printed text has an em dash, is met halfway: each read view normalises the one spelling it expects.
+# Views that cross scriptures are not here: they read only the vocabulary's parent labels, so they live
+# in realm-scripture-vocabulary and answer from whatever is installed. The ones that read the King
+# James beside these scriptures are here, because only this realm knows which verse draws on which.
+
+- name: ReadDcVerse
+  description: One verse of the Doctrine and Covenants by reference, with the King James verse it quotes or echoes, if any.
+  params:
+    ref:
+      type: string
+      default: "D&C 76:22"
+      description: "The verse, e.g. `D&C 76:22`, `D&C 121:7`; `Doctrine and Covenants 76:22` is read the same."
+  cypher: |
+    MATCH (v:DcVerse)
+    WHERE v.name = replace($ref, 'Doctrine and Covenants ', 'D&C ')
+    RETURN v.name AS reference, v.text AS text, v.kjvRefs AS quotes, v.kjvAllusions AS echoes
+
+- name: ReadDcSection
+  description: A whole section of the Doctrine and Covenants, verse by verse, with the King James verse each one quotes or echoes.
+  params:
+    section:
+      type: int
+      default: 76
+      description: "The section number, 1 to 138, e.g. `76` (the vision of the degrees of glory), `89` (the Word of Wisdom), `138` (the redemption of the dead)."
+  cypher: |
+    MATCH (s:DcSection {chapter: $section})<-[:IN]-(v:DcVerse)
+    RETURN s.name AS section, v.verse AS verse, v.text AS text, v.kjvRefs AS quotes, v.kjvAllusions AS echoes
+    ORDER BY verse
+
+- name: DcSections
+  description: Every section of the Doctrine and Covenants in order, with its length and the King James chapters its verses quote or echo.
+  params:
+    drawingOnly:
+      type: boolean
+      default: false
+      description: "Only the sections that quote or echo the King James."
+  cypher: |
+    MATCH (s:DcSection)
+    WHERE NOT $drawingOnly OR s.drawsOn IS NOT NULL
+    RETURN s.chapter AS section, s.verseCount AS verses, s.drawsOn AS drawsOn
+    ORDER BY section
+
+- name: SearchDoctrineAndCovenants
+  description: Doctrine and Covenants verses whose text contains a word or phrase, case-insensitively, in reading order. Matches inside words — `priest` also finds `priesthood`.
+  params:
+    term:
+      type: string
+      default: "priesthood"
+      description: "The word or phrase to find."
+    limit:
+      type: int
+      default: 100
+      description: "How many verses to return."
+  cypher: |
+    MATCH (v:DcVerse)
+    WHERE toLower(v.text) CONTAINS toLower($term)
+    RETURN v.name AS reference, v.text AS text
+    ORDER BY v.ordinal
+    LIMIT $limit
+
+- name: ReadPgpVerse
+  description: One verse of the Pearl of Great Price by reference, with the King James verse it quotes, revises or echoes, if any.
+  params:
+    ref:
+      type: string
+      default: "Moses 1:39"
+      description: "The verse, e.g. `Moses 1:39`, `Abraham 3:22`, `Joseph Smith—History 1:17`; a hyphen in place of the em dash is read the same."
+  cypher: |
+    MATCH (v:PgpVerse)
+    WHERE v.name = replace(replace($ref, ' - ', '—'), '-', '—')
+    RETURN v.name AS reference, v.text AS text, v.kjvRefs AS quotes, v.kjvAllusions AS echoes
+
+- name: ReadPgpChapter
+  description: A whole chapter of the Pearl of Great Price, verse by verse, with the King James chapters it retells and the verse each of its verses quotes or echoes.
+  params:
+    chapter:
+      type: string
+      default: "Moses 1"
+      description: "The chapter, e.g. `Moses 7`, `Abraham 3`, `Joseph Smith—Matthew 1`, `Articles of Faith 1`; a hyphen in place of the em dash is read the same."
+  cypher: |
+    MATCH (c:PgpChapter)<-[:IN]-(v:PgpVerse)
+    WHERE c.name = replace(replace($chapter, ' - ', '—'), '-', '—')
+    RETURN c.parallelsChapters AS retells, v.verse AS verse, v.text AS text, v.kjvRefs AS quotes, v.kjvAllusions AS echoes
+    ORDER BY verse
+
+- name: PgpBooks
+  description: The five books of the Pearl of Great Price in order, with their full titles, how many chapters and verses each holds, and the King James chapters each retells.
+  cypher: |
+    MATCH (b:PgpBook)<-[:IN]-(c:PgpChapter)
+    WITH b, collect(c.parallelsChapters) AS retold
+    RETURN b.bookOrder AS order, b.name AS book, b.fullTitle AS fullTitle, b.subtitle AS subtitle,
+           b.chapterCount AS chapters, b.verseCount AS verses,
+           reduce(acc = [], cs IN retold | acc + [c IN cs WHERE NOT c IN acc]) AS retells
+    ORDER BY order
+
+- name: SearchPearlOfGreatPrice
+  description: Pearl of Great Price verses whose text contains a word or phrase, case-insensitively, in reading order. Matches inside words — `create` also finds `created`.
+  params:
+    term:
+      type: string
+      default: "Enoch"
+      description: "The word or phrase to find."
+    limit:
+      type: int
+      default: 100
+      description: "How many verses to return."
+  cypher: |
+    MATCH (v:PgpVerse)
+    WHERE toLower(v.text) CONTAINS toLower($term)
+    RETURN v.name AS reference, v.text AS text
+    ORDER BY v.ordinal
+    LIMIT $limit
+
+- name: LdsBesideKingJames
+  description: A section of the Doctrine and Covenants or a chapter of the Pearl of Great Price verse by verse, beside the King James verse each one quotes or echoes, through CORRESPONDS_TO — where it revises its source, the two texts show it. Needs realm-bible.
+  params:
+    chapter:
+      type: string
+      default: "Moses 2"
+      description: "A section or chapter, e.g. `Moses 2` (Genesis 1), `Joseph Smith—Matthew 1` (Matthew 24), `D&C 138` (1 Peter 3–4), `Abraham 4`."
+  cypher: |
+    MATCH (c:ScriptureChapter)<-[:IN]-(m:Verse)
+    WHERE c.scripture IN ['doctrine-and-covenants', 'pearl-of-great-price']
+      AND c.name = replace(replace(replace($chapter, 'Doctrine and Covenants ', 'D&C '), ' - ', '—'), '-', '—')
+    OPTIONAL MATCH (m)-[r:CORRESPONDS_TO]->(k:BibleVerse)
+    RETURN m.verse AS verse, m.text AS text, k.name AS kingJames, k.text AS kjv, r.kind AS kind
+    ORDER BY verse
+
+- name: LdsVersesDrawingOn
+  description: Every verse of the Doctrine and Covenants and the Pearl of Great Price that quotes or echoes a given book of the King James, in reading order — where Isaiah, Malachi or Revelation are taken up. Needs realm-bible.
+  params:
+    book:
+      type: string
+      default: "Malachi"
+      description: "A King James book as printed, e.g. `Isaiah`, `1 Peter`, `Revelation`, `Genesis`."
+    limit:
+      type: int
+      default: 100
+      description: "How many verses to return."
+  cypher: |
+    MATCH (m:Verse)-[r:CORRESPONDS_TO]->(k:BibleVerse)
+    WHERE m.scripture IN ['doctrine-and-covenants', 'pearl-of-great-price'] AND k.name STARTS WITH $book + ' '
+    RETURN m.scripture AS scripture, m.name AS reference, r.kind AS kind, k.name AS kingJames, m.text AS text, k.text AS kjv
+    ORDER BY scripture, m.ordinal
+    LIMIT $limit

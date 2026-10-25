@@ -1,0 +1,54 @@
+# The Doctrine and Covenants and the Pearl of Great Price as searchable DOCUMENTS, beside the graph
+# (realm spec: sources.yml, `lane: documents`).
+#
+# The graph answers "which verses mention priesthood"; documents answer "which sections are ABOUT the
+# redemption of the dead" — chunked, embedded, and reachable by RELEVANT_TO. One document per section
+# or chapter, verse numbers kept so a hit can be traced to its verse. A document's uri is its
+# chapter's `documentUri`, which is how a hit finds its way back to the verses.
+#
+# Tagged `scripture` as well as each scripture's own slug: the vocabulary's meaning-search views
+# retrieve every scripture's chapters by that one tag, so these are searched beside the Bible, the
+# Quran, the Torah and the Book of Mormon in one ranking, and by the slug when one is asked alone.
+sources:
+  - name: doctrine-and-covenants-text
+    lane: documents
+    from:
+      cypher: |
+        MATCH (c:DcSection)<-[:IN]-(v:DcVerse)
+        WITH c, v ORDER BY v.verse
+        WITH c, collect({n: v.verse, text: v.text}) AS verses
+        RETURN c.documentUri AS uri, c.name AS title, verses
+    document:
+      uri: "{{ uri }}"
+      title: "{{ title }} (Doctrine and Covenants)"
+      content: |
+        # {{ title }}
+
+        {% for v in verses %}{{ v.n }} {{ v.text }}
+        {% endfor %}
+      sourceKind: doctrine-and-covenants
+      tags: [scripture, doctrine-and-covenants]
+    sync:
+      trigger: on-install
+      prune: true
+  - name: pearl-of-great-price-text
+    lane: documents
+    from:
+      cypher: |
+        MATCH (c:PgpChapter)<-[:IN]-(v:PgpVerse)
+        WITH c, v ORDER BY v.verse
+        WITH c, collect({n: v.verse, text: v.text}) AS verses
+        RETURN c.documentUri AS uri, c.name AS title, verses
+    document:
+      uri: "{{ uri }}"
+      title: "{{ title }} (Pearl of Great Price)"
+      content: |
+        # {{ title }}
+
+        {% for v in verses %}{{ v.n }} {{ v.text }}
+        {% endfor %}
+      sourceKind: pearl-of-great-price
+      tags: [scripture, pearl-of-great-price]
+    sync:
+      trigger: on-install
+      prune: true

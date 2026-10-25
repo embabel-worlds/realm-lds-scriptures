@@ -1,0 +1,152 @@
+# The Doctrine and Covenants and the Pearl of Great Price as a graph: seven STORED types, children of
+# the scripture vocabulary, in two holy books.
+#
+#   DcScripture ◀─IN─ DcSection ◀─IN─ DcVerse                       (HolyBook, ScriptureChapter, Verse)
+#   PgpScripture ◀─IN─ PgpBook ◀─IN─ PgpChapter ◀─IN─ PgpVerse      (HolyBook, ScriptureBook, ScriptureChapter, Verse)
+#
+# The Doctrine and Covenants has sections, not books, so a section is IN its holy book directly, as a
+# surah is in the Quran: the vocabulary's `(v:Verse)-[:IN*1..3]->(h:HolyBook)` reaches it either way.
+# Seeded from reference/, which scripts/build_reference.py builds; it never changes.
+#
+# TWO SCRIPTURES, NOT ONE. The tradition prints them in one volume with the Book of Mormon, but holds
+# each as its own book of scripture, so each has its own `scripture` slug — `doctrine-and-covenants`,
+# `pearl-of-great-price` — and a question asked of every scripture answers for each apart.
+#
+# ONE TEXT. Both were received in English, so `text` is the scripture and `original` is empty, as the
+# vocabulary says it is for such a scripture. `translation` names the edition, not a rendering.
+#
+# REFERENCES NEED NO QUALIFIER. `D&C 76:22` is how a reader writes it and is no other scripture's;
+# no book of the Pearl of Great Price shares a name with a book of the Bible or the Book of Mormon,
+# so `name` is `Moses 1:39`, `Joseph Smith—History 1:17` (with the em dash, as printed).
+#
+# THE BIBLE. `kjvRefs` names a King James verse a verse quotes, `kjvAllusions` one it echoes; both are
+# FOUND by the build, by word likeness, not written by hand, and rules/corresponds.yml draws
+# CORRESPONDS_TO from them when realm-bible is installed. Moses 2–8 is Genesis as Joseph Smith revised
+# it: where a revised verse keeps the King James's words it reads as a quotation, and where it adds a
+# sermon around them, as an allusion — the edge cannot tell a revision from a quotation, and says
+# which King James verse it is either way.
+#
+# The types are prefixed `Dc` and `Pgp`: the realm's provenance label is `LdsScriptures`, which no
+# type may share.
+
+- name: DcScripture
+  parents: [HolyBook]
+  userAnchor: false
+  description: "The Doctrine and Covenants as one holy book — a single node, `scripture: 'doctrine-and-covenants'`. Its 138 sections are IN it."
+  properties:
+    scripture:
+      identity: true
+      description: "Always `doctrine-and-covenants`. Identity."
+    textSource: "Where the text comes from: bcbooks/scriptures-json, public domain, without the copyrighted introduction, section headings, footnotes and Official Declarations."
+
+- name: DcSection
+  parents: [ScriptureChapter]
+  userAnchor: false
+  description: >-
+    A section of the Doctrine and Covenants, e.g. `D&C 76` — the unit it is read and cited in, as a
+    chapter is elsewhere. `chapter` is the section number. `drawsOn` lists the King James chapters its
+    verses quote or echo. IN the DcScripture; its verses are IN it.
+  properties:
+    ref:
+      identity: true
+      description: "`dc.<section>`, e.g. `dc.76`. Identity."
+    drawsOn:
+      cardinality: LIST
+      description: "The King James chapters this section's verses quote or echo, in order of first appearance, e.g. `[1 Peter 3, 1 Peter 4]` for D&C 138. Absent on a section that draws on none."
+
+- name: DcVerse
+  parents: [Verse]
+  userAnchor: false
+  description: >-
+    One verse of the Doctrine and Covenants. `text` is the scripture, in English as it was received;
+    `original` is empty. `name` is the reference, e.g. `D&C 76:22`; `chapter` is the section number.
+    Search with toLower(v.text) CONTAINS 'priesthood'. `kjvRefs` names a King James verse it quotes
+    (D&C 74:1 is 1 Corinthians 7:14), `kjvAllusions` one it echoes. IN its DcSection.
+  properties:
+    ref:
+      identity: true
+      description: "`dc.<section>.<verse>`, e.g. `dc.76.22`. Identity."
+    kjvRefs:
+      cardinality: LIST
+      description: "The King James verse this verse quotes, e.g. `[1 Peter 3:18]` for D&C 138:7. Absent where it quotes none."
+    kjvAllusions:
+      cardinality: LIST
+      description: "A King James verse this verse echoes without quoting, found by shared words — a candidate, e.g. `[Matthew 13:30]` for D&C 86:7."
+    kjvOsis:
+      cardinality: LIST
+      description: "`kjvRefs` as OSIS references, e.g. `[1Pet.3.18]` — realm-bible's BibleVerse identity, which CORRESPONDS_TO joins on because it is indexed and `name` is not."
+    kjvAllusionOsis:
+      cardinality: LIST
+      description: "`kjvAllusions` as OSIS references, e.g. `[Matt.13.30]`."
+
+- name: PgpScripture
+  parents: [HolyBook]
+  userAnchor: false
+  description: "The Pearl of Great Price as one holy book — a single node, `scripture: 'pearl-of-great-price'`. Its five books are IN it."
+  properties:
+    scripture:
+      identity: true
+      description: "Always `pearl-of-great-price`. Identity."
+    textSource: "Where the text comes from: bcbooks/scriptures-json, public domain, without the copyrighted introduction, chapter headings and footnotes."
+
+- name: PgpBook
+  parents: [ScriptureBook]
+  userAnchor: false
+  description: "One of the five books — Moses, Abraham, Joseph Smith—Matthew, Joseph Smith—History, the Articles of Faith — with its full title. IN the PgpScripture; its chapters are IN it."
+  properties:
+    slug:
+      identity: true
+      description: "The book's name as a slug, e.g. `moses`, `joseph-smith-history`. Identity."
+    fullTitle: "The book's title as printed, e.g. `Selections from the Book of Moses`."
+    subtitle: "The line printed under the title, where there is one, e.g. `Translated from the Papyrus, by Joseph Smith`."
+    chapterCount:
+      type: int
+      description: "Chapters in the book."
+    verseCount:
+      type: int
+      description: "Verses in the book."
+
+- name: PgpChapter
+  parents: [ScriptureChapter]
+  userAnchor: false
+  description: >-
+    A chapter of the Pearl of Great Price, e.g. `Moses 1`, `Joseph Smith—History 1`.
+    `parallelsChapters` names the King James chapters it retells, where it retells some (Moses 2–8:
+    Genesis 1–6); `drawsOn` the chapters its verses quote or echo. IN its book; its verses are IN it.
+  properties:
+    ref:
+      identity: true
+      description: "`<book slug>.<chapter>`, e.g. `moses.1`. Identity."
+    book: "The book's name, e.g. `Abraham`."
+    parallelsChapters:
+      cardinality: LIST
+      description: "The King James chapters this chapter retells, e.g. `[Matthew 23, Matthew 24, Mark 13, Luke 21]` for Joseph Smith—Matthew 1. Absent on a chapter with no known parallel."
+    drawsOn:
+      cardinality: LIST
+      description: "The King James chapters this chapter's verses quote or echo, in order of first appearance."
+
+- name: PgpVerse
+  parents: [Verse]
+  userAnchor: false
+  description: >-
+    One verse of the Pearl of Great Price. `text` is the scripture, in English as it was received;
+    `original` is empty. `name` is the reference as printed, e.g. `Moses 1:39`, `Joseph Smith—Matthew
+    1:4` (an em dash). `kjvRefs` names a King James verse it quotes or revises (Moses 2:3 is Genesis
+    1:3), `kjvAllusions` one it echoes. IN its PgpChapter.
+  properties:
+    ref:
+      identity: true
+      description: "`<book slug>.<chapter>.<verse>`, e.g. `moses.1.39`. Identity."
+    book: "The book's name, e.g. `Moses`."
+    kjvRefs:
+      cardinality: LIST
+      description: "The King James verse this verse quotes or revises, e.g. `[Genesis 1:3]` for Moses 2:3. Absent where it quotes none."
+    kjvAllusions:
+      cardinality: LIST
+      description: "A King James verse this verse echoes without quoting, found by shared words — a candidate, e.g. `[Isaiah 6:8]` for Abraham 3:27."
+    kjvOsis:
+      cardinality: LIST
+      description: "`kjvRefs` as OSIS references, e.g. `[Gen.1.3]`."
+    kjvAllusionOsis:
+      cardinality: LIST
+      description: "`kjvAllusions` as OSIS references, e.g. `[Isa.6.8]`."

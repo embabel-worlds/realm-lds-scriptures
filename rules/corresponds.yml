@@ -1,0 +1,47 @@
+# DERIVE rule set: each verse of the Doctrine and Covenants or the Pearl of Great Price and the King
+# James verse it quotes or echoes.
+#
+# The vocabulary's CORRESPONDS_TO, declared by the realm that knows both texts. The pairing is STORED
+# on the verse (`kjvOsis`, `kjvAllusionOsis`), found by scripts/build_reference.py, so the rule is a
+# lookup: D&C 138:7 to 1 Peter 3:18, Moses 2:3 to Genesis 1:3, Joseph Smith—Matthew 1:4 to Matthew
+# 24:3. A quotation and an allusion are told apart on the edge, because a reader weighs them
+# differently; a revised verse of Moses that keeps the King James's words is a quotation here.
+#
+# It joins on the OSIS lists, the BibleVerse's identity, not on readable references against `name`:
+# the identity is indexed, so each verse is a lookup; `name` is not, and a key held in a variable (as
+# UNWIND gives) cannot be hash-joined, so it would scan every Bible verse per verse.
+#
+# It needs realm-bible. Without it no BibleVerse is there to bind and the relationship is simply empty.
+# The direction is these scriptures → Bible; a query that does not care writes `-[:CORRESPONDS_TO]-`.
+
+name: lds-scriptures/corresponds
+derives: CORRESPONDS_TO
+properties:
+  kind:
+    type: string
+    description: "What the correspondence is — `translation` (the same verse in two scriptures' English), `quotation` or `allusion` (one scripture drawing on another)."
+description: >-
+  A verse of the Doctrine and Covenants or the Pearl of Great Price CORRESPONDS_TO the King James
+  verse it quotes (`kind: 'quotation'`) or echoes (`kind: 'allusion'`) — D&C 138:7 to 1 Peter 3:18,
+  Moses 2:3 to Genesis 1:3. Needs realm-bible.
+rules:
+  - derive: "(m)-[:CORRESPONDS_TO {kind: 'quotation'}]->(b)"
+    from: |
+      MATCH (m:DcVerse) WHERE m.kjvOsis IS NOT NULL
+      UNWIND m.kjvOsis AS ref
+      MATCH (b:BibleVerse {osis: ref})
+  - derive: "(m)-[:CORRESPONDS_TO {kind: 'allusion'}]->(b)"
+    from: |
+      MATCH (m:DcVerse) WHERE m.kjvAllusionOsis IS NOT NULL
+      UNWIND m.kjvAllusionOsis AS ref
+      MATCH (b:BibleVerse {osis: ref})
+  - derive: "(m)-[:CORRESPONDS_TO {kind: 'quotation'}]->(b)"
+    from: |
+      MATCH (m:PgpVerse) WHERE m.kjvOsis IS NOT NULL
+      UNWIND m.kjvOsis AS ref
+      MATCH (b:BibleVerse {osis: ref})
+  - derive: "(m)-[:CORRESPONDS_TO {kind: 'allusion'}]->(b)"
+    from: |
+      MATCH (m:PgpVerse) WHERE m.kjvAllusionOsis IS NOT NULL
+      UNWIND m.kjvAllusionOsis AS ref
+      MATCH (b:BibleVerse {osis: ref})

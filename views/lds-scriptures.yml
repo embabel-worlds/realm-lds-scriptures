@@ -8,7 +8,10 @@
 # James beside these scriptures are here, because only this realm knows which verse draws on which.
 
 - name: ReadDcVerse
-  description: One verse of the Doctrine and Covenants by reference, with the King James verse it quotes or echoes, if any.
+  description: >-
+    One Doctrine and Covenants verse by reference, with the King James it draws on. Only the one
+    verse, matched exactly by its reference; the King James verses are named, not quoted — use
+    LdsBesideKingJames for their text.
   params:
     ref:
       type: string
@@ -20,7 +23,10 @@
     RETURN v.name AS reference, v.text AS text, v.kjvRefs AS quotes, v.kjvAllusions AS echoes
 
 - name: ReadDcSection
-  description: A whole section of the Doctrine and Covenants, verse by verse, with the King James verse each one quotes or echoes.
+  description: >-
+    A whole Doctrine and Covenants section, verse by verse, with what each draws on. One section
+    only, by number; the King James verses are named, not quoted. No section headings, which are
+    not part of the public-domain text.
   params:
     section:
       type: int
@@ -32,12 +38,14 @@
     ORDER BY verse
 
 - name: DcSections
-  description: Every section of the Doctrine and Covenants in order, with its length and the King James chapters its verses quote or echo.
+  description: >-
+    Every Doctrine and Covenants section, with its length and King James sources. One row
+    per section, 1 to 138, in order; the Official Declarations are not included.
   params:
     drawingOnly:
       type: boolean
       default: false
-      description: "Only the sections that quote or echo the King James."
+      description: "true: only the sections whose verses quote or echo the King James; false: all 138."
   cypher: |
     MATCH (s:DcSection)
     WHERE NOT $drawingOnly OR s.drawsOn IS NOT NULL
@@ -45,16 +53,20 @@
     ORDER BY section
 
 - name: SearchDoctrineAndCovenants
-  description: Doctrine and Covenants verses whose text contains a word or phrase, case-insensitively, in reading order. Matches inside words — `priest` also finds `priesthood`.
+  description: >-
+    Doctrine and Covenants verses containing a word or phrase, in reading order. Partial and
+    case-insensitive: it matches inside words, so `priest` also finds `priesthood`. At most `limit`
+    verses; the Pearl of Great Price is searched by SearchPearlOfGreatPrice, every scripture at once
+    by SearchScriptures.
   params:
     term:
       type: string
       default: "priesthood"
-      description: "The word or phrase to find."
+      description: "The word or phrase to find. A partial match, ignoring case: any verse whose text contains it."
     limit:
       type: int
       default: 100
-      description: "How many verses to return."
+      description: "At most this many verses, in reading order."
   cypher: |
     MATCH (v:DcVerse)
     WHERE toLower(v.text) CONTAINS toLower($term)
@@ -63,7 +75,10 @@
     LIMIT $limit
 
 - name: ReadPgpVerse
-  description: One verse of the Pearl of Great Price by reference, with the King James verse it quotes, revises or echoes, if any.
+  description: >-
+    One Pearl of Great Price verse by reference, with the King James it draws on. Only the one
+    verse, matched exactly by its reference; the King James verses are named, not quoted — use
+    LdsBesideKingJames for their text.
   params:
     ref:
       type: string
@@ -75,7 +90,10 @@
     RETURN v.name AS reference, v.text AS text, v.kjvRefs AS quotes, v.kjvAllusions AS echoes
 
 - name: ReadPgpChapter
-  description: A whole chapter of the Pearl of Great Price, verse by verse, with the King James chapters it retells and the verse each of its verses quotes or echoes.
+  description: >-
+    A whole Pearl of Great Price chapter, verse by verse, with what each draws on. One chapter
+    only, named exactly; gives the King James chapters it parallels and names the verse each of its
+    verses quotes or echoes, without quoting them.
   params:
     chapter:
       type: string
@@ -88,7 +106,10 @@
     ORDER BY verse
 
 - name: PgpBooks
-  description: The five books of the Pearl of Great Price in order, with their full titles, how many chapters and verses each holds, and the King James chapters each retells.
+  description: >-
+    The Pearl of Great Price's five books: titles, sizes and King James parallels. One row
+    per book, in printed order; no introductions or chapter headings, which are not part of the
+    public-domain text.
   cypher: |
     MATCH (b:PgpBook)<-[:IN]-(c:PgpChapter)
     WITH b, collect(c.parallelsChapters) AS retold
@@ -98,16 +119,19 @@
     ORDER BY order
 
 - name: SearchPearlOfGreatPrice
-  description: Pearl of Great Price verses whose text contains a word or phrase, case-insensitively, in reading order. Matches inside words — `create` also finds `created`.
+  description: >-
+    Pearl of Great Price verses containing a word or phrase, in reading order. Partial and
+    case-insensitive: it matches inside words, so `create` also finds `created`. At most `limit`
+    verses; the Doctrine and Covenants is searched by SearchDoctrineAndCovenants.
   params:
     term:
       type: string
       default: "Enoch"
-      description: "The word or phrase to find."
+      description: "The word or phrase to find. A partial match, ignoring case: any verse whose text contains it."
     limit:
       type: int
       default: 100
-      description: "How many verses to return."
+      description: "At most this many verses, in reading order."
   cypher: |
     MATCH (v:PgpVerse)
     WHERE toLower(v.text) CONTAINS toLower($term)
@@ -116,7 +140,10 @@
     LIMIT $limit
 
 - name: LdsBesideKingJames
-  description: A section of the Doctrine and Covenants or a chapter of the Pearl of Great Price verse by verse, beside the King James verse each one quotes or echoes, through CORRESPONDS_TO — where it revises its source, the two texts show it. Needs realm-bible.
+  description: >-
+    A D&C section or Pearl of Great Price chapter beside the King James it draws on. Verse by
+    verse, through CORRESPONDS_TO, with both texts, so where it differs from its source the two show
+    it. Needs realm-bible: without it the King James columns are empty. One section or chapter only.
   params:
     chapter:
       type: string
@@ -131,16 +158,19 @@
     ORDER BY verse
 
 - name: LdsVersesDrawingOn
-  description: Every verse of the Doctrine and Covenants and the Pearl of Great Price that quotes or echoes a given book of the King James, in reading order — where Isaiah, Malachi or Revelation are taken up. Needs realm-bible.
+  description: >-
+    D&C and Pearl of Great Price verses quoting or echoing one King James book. In reading
+    order, at most `limit` — where Isaiah, Malachi or Revelation are taken up. Needs realm-bible:
+    without it there are no rows. Not the Book of Mormon, which realm-book-of-mormon answers.
   params:
     book:
       type: string
       default: "Malachi"
-      description: "A King James book as printed, e.g. `Isaiah`, `1 Peter`, `Revelation`, `Genesis`."
+      description: "A King James book as printed, e.g. `Isaiah`, `1 Peter`, `Revelation`. Matched as the prefix of each verse's reference, whole book name only: `John` does not match `1 John`."
     limit:
       type: int
       default: 100
-      description: "How many verses to return."
+      description: "At most this many verses."
   cypher: |
     MATCH (m:Verse)-[r:CORRESPONDS_TO]->(k:BibleVerse)
     WHERE m.scripture IN ['doctrine-and-covenants', 'pearl-of-great-price'] AND k.name STARTS WITH $book + ' '

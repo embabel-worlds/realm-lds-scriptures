@@ -43,25 +43,39 @@
   parents: [ScriptureChapter]
   userAnchor: false
   description: >-
-    A section of the Doctrine and Covenants, e.g. `D&C 76` — the unit it is read and cited in, as a
-    chapter is elsewhere. `chapter` is the section number. `drawsOn` lists the King James chapters its
-    verses quote or echo. IN the DcScripture; its verses are IN it.
+    One section of the Doctrine and Covenants, identified by `ref` (`dc.76`) and named `D&C 76` —
+    the unit it is read and cited in, as a chapter is elsewhere. `chapter` is the section number,
+    1 to 138. `drawsOn` lists the King James chapters its verses quote or echo. IN the DcScripture;
+    its verses are IN it.
+  examples:
+    - q: "read section 89 of the Doctrine and Covenants"
+      cypher: |
+        MATCH (s:DcSection {chapter: 89})<-[:IN]-(v:DcVerse)
+        RETURN v.name AS reference, v.text AS text
+        ORDER BY v.verse
   properties:
     ref:
       identity: true
       description: "`dc.<section>`, e.g. `dc.76`. Identity."
     drawsOn:
       cardinality: LIST
-      description: "The King James chapters this section's verses quote or echo, in order of first appearance, e.g. `[1 Peter 3, 1 Peter 4]` for D&C 138. Absent on a section that draws on none."
+      description: "Not a date: the King James chapters this section's verses quote or echo, in order of first appearance, e.g. `[1 Peter 3, 1 Peter 4]` for D&C 138. Absent when none."
 
 - name: DcVerse
   parents: [Verse]
   userAnchor: false
   description: >-
-    One verse of the Doctrine and Covenants. `text` is the scripture, in English as it was received;
-    `original` is empty. `name` is the reference, e.g. `D&C 76:22`; `chapter` is the section number.
-    Search with toLower(v.text) CONTAINS 'priesthood'. `kjvRefs` names a King James verse it quotes
-    (D&C 74:1 is 1 Corinthians 7:14), `kjvAllusions` one it echoes. IN its DcSection.
+    One verse of the Doctrine and Covenants, identified by `ref` (`dc.76.22`); `name` is the
+    reference, `D&C 76:22`, and `chapter` the section number. `text` is the scripture, in English as
+    it was received; `original` is empty. `kjvRefs` names a King James verse it quotes (D&C 74:1 is
+    1 Corinthians 7:14), `kjvAllusions` one it echoes. IN its DcSection.
+  examples:
+    - q: "which Doctrine and Covenants verses quote 1 Peter"
+      cypher: |
+        MATCH (v:DcVerse)-[r:CORRESPONDS_TO]->(k:BibleVerse)
+        WHERE k.name STARTS WITH '1 Peter '
+        RETURN v.name AS reference, k.name AS kingJames, r.kind AS kind
+        ORDER BY v.ordinal
   properties:
     ref:
       identity: true
@@ -71,7 +85,7 @@
       description: "The King James verse this verse quotes, e.g. `[1 Peter 3:18]` for D&C 138:7. Absent where it quotes none."
     kjvAllusions:
       cardinality: LIST
-      description: "A King James verse this verse echoes without quoting, found by shared words — a candidate, e.g. `[Matthew 13:30]` for D&C 86:7."
+      description: "A King James verse this verse echoes without quoting, found by shared words — a candidate, e.g. `[Matthew 13:30]` for D&C 86:7. Absent where it echoes none."
     kjvOsis:
       cardinality: LIST
       description: "`kjvRefs` as OSIS references, e.g. `[1Pet.3.18]` — realm-bible's BibleVerse identity, which CORRESPONDS_TO joins on because it is indexed and `name` is not."
@@ -92,7 +106,7 @@
 - name: PgpBook
   parents: [ScriptureBook]
   userAnchor: false
-  description: "One of the five books — Moses, Abraham, Joseph Smith—Matthew, Joseph Smith—History, the Articles of Faith — with its full title. IN the PgpScripture; its chapters are IN it."
+  description: "One of the five books of the Pearl of Great Price, identified by `slug` (`moses`) — Moses, Abraham, Joseph Smith—Matthew, Joseph Smith—History, the Articles of Faith — with its full title. IN the PgpScripture; its chapters are IN it."
   properties:
     slug:
       identity: true
@@ -110,9 +124,16 @@
   parents: [ScriptureChapter]
   userAnchor: false
   description: >-
-    A chapter of the Pearl of Great Price, e.g. `Moses 1`, `Joseph Smith—History 1`.
-    `parallelsChapters` names the King James chapters it retells, where it retells some (Moses 2–8:
-    Genesis 1–6); `drawsOn` the chapters its verses quote or echo. IN its book; its verses are IN it.
+    One chapter of the Pearl of Great Price, identified by `ref` (`moses.1`) and named as printed,
+    `Moses 1`, `Joseph Smith—History 1` (an em dash). `parallelsChapters` names the King James
+    chapters it parallels, where it has some (Moses 2–8: Genesis 1–6); `drawsOn` the chapters its
+    verses quote or echo. IN its book; its verses are IN it.
+  examples:
+    - q: "which King James chapters does the Book of Moses parallel"
+      cypher: |
+        MATCH (c:PgpChapter {book: 'Moses'})
+        RETURN c.name AS chapter, c.parallelsChapters AS parallels
+        ORDER BY c.chapter
   properties:
     ref:
       identity: true
@@ -120,19 +141,20 @@
     book: "The book's name, e.g. `Abraham`."
     parallelsChapters:
       cardinality: LIST
-      description: "The King James chapters this chapter retells, e.g. `[Matthew 23, Matthew 24, Mark 13, Luke 21]` for Joseph Smith—Matthew 1. Absent on a chapter with no known parallel."
+      description: "The King James chapters this chapter parallels, e.g. `[Matthew 23, Matthew 24, Mark 13, Luke 21]` for Joseph Smith—Matthew 1. Absent on a chapter with no known parallel."
     drawsOn:
       cardinality: LIST
-      description: "The King James chapters this chapter's verses quote or echo, in order of first appearance."
+      description: "Not a date: the King James chapters this chapter's verses quote or echo, in order of first appearance. Absent when none."
 
 - name: PgpVerse
   parents: [Verse]
   userAnchor: false
   description: >-
-    One verse of the Pearl of Great Price. `text` is the scripture, in English as it was received;
-    `original` is empty. `name` is the reference as printed, e.g. `Moses 1:39`, `Joseph Smith—Matthew
-    1:4` (an em dash). `kjvRefs` names a King James verse it quotes or revises (Moses 2:3 is Genesis
-    1:3), `kjvAllusions` one it echoes. IN its PgpChapter.
+    One verse of the Pearl of Great Price, identified by `ref` (`moses.1.39`); `name` is the
+    reference as printed, `Moses 1:39`, `Joseph Smith—Matthew 1:4` (an em dash). `text` is the
+    scripture, in English as it was received; `original` is empty. `kjvRefs` names a King James
+    verse it quotes or parallels (Moses 2:3 is Genesis 1:3), `kjvAllusions` one it echoes. IN its
+    PgpChapter.
   properties:
     ref:
       identity: true
@@ -140,10 +162,10 @@
     book: "The book's name, e.g. `Moses`."
     kjvRefs:
       cardinality: LIST
-      description: "The King James verse this verse quotes or revises, e.g. `[Genesis 1:3]` for Moses 2:3. Absent where it quotes none."
+      description: "The King James verse this verse quotes or parallels, e.g. `[Genesis 1:3]` for Moses 2:3. Absent where it quotes none."
     kjvAllusions:
       cardinality: LIST
-      description: "A King James verse this verse echoes without quoting, found by shared words — a candidate, e.g. `[Isaiah 6:8]` for Abraham 3:27."
+      description: "A King James verse this verse echoes without quoting, found by shared words — a candidate, e.g. `[Isaiah 6:8]` for Abraham 3:27. Absent where it echoes none."
     kjvOsis:
       cardinality: LIST
       description: "`kjvRefs` as OSIS references, e.g. `[Gen.1.3]`."

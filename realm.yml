@@ -1,11 +1,11 @@
 name: realm-lds-scriptures
 description: |
-  The Doctrine and Covenants and the Pearl of Great Price as a graph you can query — the two books
-  of Latter-day Saint scripture beside the Book of Mormon. Every verse of the 138 sections, and of
-  Moses, Abraham, Joseph Smith—Matthew, Joseph Smith—History and the Articles of Faith. Read a verse
-  or a section, search either, and find where they draw on the Bible: Moses retells Genesis 1–6,
-  Joseph Smith—Matthew retells Matthew 24, and the sections quote and echo the New Testament
-  throughout.
+  Every verse of the Doctrine and Covenants and the Pearl of Great Price, with the King James verses they draw on.
+  They are two of the Latter-day Saint standard works, beside the Bible and the Book of Mormon: the
+  138 sections, and Moses, Abraham, Joseph Smith—Matthew, Joseph Smith—History and the Articles of
+  Faith. Read a verse or a section, search either, and find where they draw on the Bible: Moses 2–8
+  parallels Genesis 1–6 and Joseph Smith—Matthew parallels Matthew 24 (both from Joseph Smith's
+  translation of the Bible), and the sections quote and echo the New Testament throughout.
 
   With realm-bible installed, each verse that quotes or echoes the King James is joined to it by
   CORRESPONDS_TO, so a chapter reads beside its source and the differences show.
@@ -13,7 +13,11 @@ description: |
   A child of the scripture vocabulary: two holy books, each its own scripture, so a question asked
   of every scripture answers for each. Keyless. Nothing to configure. Text public domain, from
   bcbooks/scriptures-json; no copyrighted introductions, headings, footnotes or Official Declarations.
-version: 0.1.0
+version: 0.1.1
+# Its types are children of the scripture vocabulary's, which must be installed for them to load as
+# scripture. realm-bible is a companion, not a requirement: without it CORRESPONDS_TO is simply empty.
+requires:
+  scripture-vocabulary: "[0.3.0,1.0.0)"
 # Experimental: its types are children of realm-scripture-vocabulary, which is itself experimental.
 maturity: experimental
 url: https://github.com/embabel-worlds/realm-lds-scriptures

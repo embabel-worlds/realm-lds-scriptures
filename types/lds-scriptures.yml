@@ -72,7 +72,7 @@
   examples:
     - q: "which Doctrine and Covenants verses quote 1 Peter"
       cypher: |
-        MATCH (v:DcVerse)-[r:CORRESPONDS_TO]->(k:BibleVerse)
+        MATCH (v:DcVerse)-[r:CORRESPONDS_TO]->(k:Verse {scripture: 'bible'})
         WHERE k.name STARTS WITH '1 Peter '
         RETURN v.name AS reference, k.name AS kingJames, r.kind AS kind
         ORDER BY v.ordinal

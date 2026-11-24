@@ -84,7 +84,7 @@ for kind, want in chapters.items():
     check("%s: every verse's text, exactly (%d)" % (verse[kind], len(texts)), [], bad[:5])
     check("%s: the stored reference/ loaded whole" % verse[kind], len(records(verse[kind])), len(got))
 check("PgpBook: the five books in order", [b["book"] for b in pgp["books"]],
-      [r["b"] for r in kg("MATCH (b:PgpBook) RETURN b.name AS b ORDER BY b.bookOrder")])
+      [r["book"] for r in kg("MATCH (b:PgpBook) RETURN b.name AS book ORDER BY b.bookOrder")])
 
 print("== L3: views against the graph and the source ==")
 check("ReadDcSection 76", len(chapters["DcSection"]["D&C 76"]), len(view("ReadDcSection", {"section": 76}).get("data") or []))
